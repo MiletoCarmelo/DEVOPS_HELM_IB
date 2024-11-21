@@ -5,4 +5,6 @@ metadata:
   name: ib-gateway-config
   labels:
     app: ib-gateway
+data:
+  TWS_PORT: {{ .Values.ibgateway.port }}
 
