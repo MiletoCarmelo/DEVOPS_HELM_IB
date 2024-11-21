@@ -43,7 +43,7 @@ persistence:
   enabled: true
   size: "1Gi"
   accessMode: ReadWriteOnce
-  storageClass: "standard"
+  storageClass: "local-path" # pour verifier : kubectl get storageclass
 
 # Configuration de la sécurité
 security:
