@@ -2,27 +2,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "ib-gateway.fullname" . }}
+  name: ib-gateway
   namespace: {{ .Values.namespace.name }}
   labels:
-    {{- include "ib-gateway.labels" . | nindent 4 }}
+    app: ib-gateway
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.ibgateway.port }}
       targetPort: tws
       protocol: TCP
       name: tws
-      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
-      nodePort: {{ .Values.service.nodePort }}
-      {{- end }}
-    - port: {{ .Values.service.apiPort }}
+    - port: {{ .Values.ibgateway.apiPort }}
       targetPort: api
       protocol: TCP
       name: api
-      {{- if and (eq .Values.service.type "NodePort") .Values.service.apiNodePort }}
-      nodePort: {{ .Values.service.apiNodePort }}
-      {{- end }}
     {{- if .Values.vnc.enabled }}
     - port: {{ .Values.vnc.port }}
       targetPort: vnc
@@ -30,4 +24,4 @@ spec:
       name: vnc
     {{- end }}
   selector:
-    {{- include "ib-gateway.selectorLabels" . | nindent 4 }}
+    app: ib-gateway

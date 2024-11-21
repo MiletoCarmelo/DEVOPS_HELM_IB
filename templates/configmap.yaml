@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "ib-gateway.fullname" . }}-config
+  name: ib-gateway-config
   namespace: {{ .Values.namespace.name }}
   labels:
-    {{- include "ib-gateway.labels" . | nindent 4 }}
+    app: ib-gateway
 data:
   TWS_PORT: "{{ .Values.ibgateway.port }}"
   API_PORT: "{{ .Values.ibgateway.apiPort }}"
@@ -17,7 +17,4 @@ data:
   {{- end }}
   {{- if .Values.vnc.enabled }}
   VNC_SERVER_PASSWORD: "{{ .Values.vnc.password }}"
-  {{- end }}
-  {{- if .Values.security.readOnlyApi }}
-  IBC_READ_ONLY_API: "yes"
   {{- end }}

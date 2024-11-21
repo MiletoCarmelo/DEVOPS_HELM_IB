@@ -1,36 +1,35 @@
-# Default values for IB Gateway
-
-nameOverride: ""
-fullnameOverride: ""
-
-# Namespace configuration
+# Configuration du namespace
 namespace:
-  create: true
   name: "trading"
 
-# Secret configuration
+# Configuration du secret
 secret:
   name: "ib-gateway-secrets"
 
+# Configuration de l'image
 image:
   repository: voyz/ib-gateway-docker
+  tag: latest
   pullPolicy: IfNotPresent
-  tag: "latest"
 
-# Trading Configuration
+# Configuration IB Gateway
 ibgateway:
-  mode: "paper"  # 'paper' ou 'live'
-  port: 4001
-  apiPort: 4002
+  mode: "paper"
+  port: "4001"
+  apiPort: "4002"
   timezone: "Europe/Paris"
 
-# VNC Configuration
+# Configuration VNC
 vnc:
   enabled: true
-  port: 5900
+  port: "5900"
   password: "myVNCpass"
 
-# Resource Configuration
+# Configuration du service
+service:
+  type: ClusterIP
+
+# Configuration des ressources
 resources:
   requests:
     memory: "512Mi"
@@ -39,51 +38,17 @@ resources:
     memory: "1Gi"
     cpu: "500m"
 
-# Storage Configuration
+# Configuration du stockage
 persistence:
   enabled: true
-  storageClass: "standard"
   size: "1Gi"
   accessMode: ReadWriteOnce
+  storageClass: "standard"
 
-# Service Configuration
-service:
-  type: ClusterIP
-  port: 4001
-  apiPort: 4002
-  nodePort: 30001
-  apiNodePort: 30002
-
-# Logging Configuration
-logging:
-  level: INFO
-  format: json
-
-# Monitoring Configuration
-metrics:
-  enabled: true
-  port: 9100
-  serviceMonitor:
-    enabled: false
-    interval: 30s
-
-# Security Configuration
+# Configuration de la sécurité
 security:
-  readOnlyApi: false
   autoRestartOnDisconnect: true
-  networkPolicy:
-    enabled: true
-    allowedIps: []
 
-# Backup Configuration
-backup:
-  enabled: true
-  schedule: "0 0 * * *"
-  retentionDays: 7
-
-# Pod Configuration
-podAnnotations: {}
-podSecurityContext: {}
-nodeSelector: {}
-tolerations: []
-affinity: {}
+# Configuration des logs
+logging:
+  level: "INFO"

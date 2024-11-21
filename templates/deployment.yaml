@@ -2,35 +2,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ib-gateway.fullname" . }}
+  name: ib-gateway
   namespace: {{ .Values.namespace.name }}
   labels:
-    {{- include "ib-gateway.labels" . | nindent 4 }}
+    app: ib-gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "ib-gateway.selectorLabels" . | nindent 6 }}
+      app: ib-gateway
   template:
     metadata:
       labels:
-        {{- include "ib-gateway.selectorLabels" . | nindent 8 }}
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        app: ib-gateway
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        - name: ib-gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: tws
@@ -62,7 +50,7 @@ spec:
                   key: account
           envFrom:
             - configMapRef:
-                name: {{ include "ib-gateway.fullname" . }}-config
+                name: ib-gateway-config
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.persistence.enabled }}
@@ -74,17 +62,5 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {{ include "ib-gateway.fullname" . }}-pvc
-      {{- end }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+            claimName: ib-gateway-pvc
       {{- end }}

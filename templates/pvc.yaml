@@ -3,10 +3,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "ib-gateway.fullname" . }}-pvc
+  name: ib-gateway-pvc
   namespace: {{ .Values.namespace.name }}
   labels:
-    {{- include "ib-gateway.labels" . | nindent 4 }}
+    app: ib-gateway
 spec:
   accessModes:
     - {{ .Values.persistence.accessMode }}
