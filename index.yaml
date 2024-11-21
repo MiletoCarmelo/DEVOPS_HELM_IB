@@ -27,9 +27,9 @@ entries:
       category: Finance
     apiVersion: v2
     appVersion: 1.0.0
-    created: "2024-11-21T22:42:03.724574469Z"
+    created: "2024-11-21T22:43:59.33759745Z"
     description: A Helm chart for deploying Interactive Brokers Gateway on Kubernetes
-    digest: 7e1b9d08d7b280fd971cd50e3c00115244866690691d9cc24c74f17d7702fd3a
+    digest: f9304183a3544e83af708d43b3c7effcb8607cdccf5e3f0037ce98a8ce91533e
     home: https://github.com/qantorcapital/ib-gateway-helm
     icon: https://www.interactivebrokers.com/images/web/logos/ib-logo-dark.svg
     keywords:
@@ -47,4 +47,4 @@ entries:
     urls:
     - https://raw.githubusercontent.com/MiletoCarmelo/DEVOPS_HELM_IB/github-pages/ib-gateway-0.1.0.tgz
     version: 0.1.0
-generated: "2024-11-21T22:42:03.723150455Z"
+generated: "2024-11-21T22:43:59.336142432Z"
