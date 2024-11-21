@@ -12,14 +12,12 @@ data:
   TRADING_MODE: "{{ .Values.ibgateway.mode }}"
   TZ: "{{ .Values.ibgateway.timezone }}"
   LOG_LEVEL: "{{ .Values.logging.level }}"
-  {{- if .Values.vnc.enabled }}
-  VNC_SERVER_PASSWORD: "{{ .Values.vnc.password }}"
-  {{- end }}
-  # Auto-restart configuration
   {{- if .Values.security.autoRestartOnDisconnect }}
   IBC_AUTO_RESTART_ON_DISCONNECT: "yes"
   {{- end }}
-  # Read-only API configuration
+  {{- if .Values.vnc.enabled }}
+  VNC_SERVER_PASSWORD: "{{ .Values.vnc.password }}"
+  {{- end }}
   {{- if .Values.security.readOnlyApi }}
   IBC_READ_ONLY_API: "yes"
   {{- end }}
