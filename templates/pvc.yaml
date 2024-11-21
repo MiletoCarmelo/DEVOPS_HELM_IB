@@ -1,17 +1,17 @@
-# # templates/pvc.yaml
-# {{- if .Values.persistence.enabled }}
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: ib-gateway-pvc
-#   namespace: {{ .Values.namespace.name }}
-#   labels:
-#     app: ib-gateway
-# spec:
-#   accessModes:
-#     - {{ .Values.persistence.accessMode }}
-#   storageClassName: {{ .Values.persistence.storageClass }}
-#   resources:
-#     requests:
-#       storage: {{ .Values.persistence.size }}
-# {{- end }}
+# templates/pvc.yaml
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ib-gateway-pvc
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: ib-gateway
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  storageClassName: {{ .Values.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+{{- end }}
