@@ -1,0 +1,33 @@
+# templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ib-gateway.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "ib-gateway.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: tws
+      protocol: TCP
+      name: tws
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+    - port: {{ .Values.service.apiPort }}
+      targetPort: api
+      protocol: TCP
+      name: api
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.apiNodePort }}
+      nodePort: {{ .Values.service.apiNodePort }}
+      {{- end }}
+    {{- if .Values.vnc.enabled }}
+    - port: {{ .Values.vnc.port }}
+      targetPort: vnc
+      protocol: TCP
+      name: vnc
+    {{- end }}
+  selector:
+    {{- include "ib-gateway.selectorLabels" . | nindent 4 }}

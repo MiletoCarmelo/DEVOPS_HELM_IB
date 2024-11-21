@@ -1,0 +1,17 @@
+# templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ib-gateway.fullname" . }}-config
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "ib-gateway.labels" . | nindent 4 }}
+data:
+  TRADING_MODE: {{ .Values.ibgateway.mode | quote }}
+  TWS_PORT: {{ .Values.ibgateway.port | quote }}
+  API_PORT: {{ .Values.ibgateway.apiPort | quote }}
+  TZ: {{ .Values.ibgateway.timezone | quote }}
+  LOG_LEVEL: {{ .Values.logging.level | quote }}
+  {{- if .Values.vnc.enabled }}
+  VNC_SERVER_PASSWORD: {{ .Values.vnc.password | quote }}
+  {{- end }}
