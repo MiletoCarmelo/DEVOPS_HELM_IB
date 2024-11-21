@@ -8,7 +8,7 @@ secret:
 
 # Configuration de l'image
 image:
-  repository: voyz/ib-gateway-docker
+  repository: ghcr.io/uijin/ib-gateway-arm64
   tag: latest
   pullPolicy: IfNotPresent
 
