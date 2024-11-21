@@ -1,5 +1,5 @@
 apiVersion: v2
-name: generic-ibgatway-backend
+name: generic-ibgateway-backend
 description: A Helm chart for Kubernetes - Generic
 
 # A chart can be either an 'application' or a 'library' chart.
