@@ -22,4 +22,29 @@ entries:
     urls:
     - https://raw.githubusercontent.com/MiletoCarmelo/DEVOPS_HELM_IB/github-pages/generic-ibgatway-backend-0.1.0.tgz
     version: 0.1.0
-generated: "2024-11-21T22:32:02.189539282Z"
+  ib-gateway:
+  - annotations:
+      category: Finance
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2024-11-21T22:32:36.710118923Z"
+    description: A Helm chart for deploying Interactive Brokers Gateway on Kubernetes
+    digest: 1b5b93efdc5f5e190f8a77f8cd0b0532ed531b2b9ca63dd0451d8805a7ef3f57
+    home: https://github.com/qantorcapital/ib-gateway-helm
+    icon: https://www.interactivebrokers.com/images/web/logos/ib-logo-dark.svg
+    keywords:
+    - trading
+    - interactive-brokers
+    - gateway
+    - finance
+    maintainers:
+    - email: contact@qantorcapital.com
+      name: Qantor Capital
+    name: ib-gateway
+    sources:
+    - https://github.com/qantorcapital/ib-gateway-helm
+    type: application
+    urls:
+    - https://raw.githubusercontent.com/MiletoCarmelo/DEVOPS_HELM_IB/github-pages/ib-gateway-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-11-21T22:32:36.708809361Z"
