@@ -3,12 +3,12 @@ entries:
   generic-ibgatway-backend:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2024-11-21T22:23:10.597897922Z"
+    created: "2024-11-21T22:24:05.670319284Z"
     description: A Helm chart for Kubernetes - Generic
-    digest: 156ff61af08cccdf7cc6f5811a7898c7863d6082064e1017f0ed7d5dd9a1a6d0
+    digest: 4f6ef732119bbd36f743d312a349b2d7e01672e45bdeab9afe7cc801a216012b
     name: generic-ibgatway-backend
     type: application
     urls:
     - https://raw.githubusercontent.com/MiletoCarmelo/DEVOPS_HELM_IB/github-pages/generic-ibgatway-backend-0.1.0.tgz
     version: 0.1.0
-generated: "2024-11-21T22:23:10.596406126Z"
+generated: "2024-11-21T22:24:05.669109279Z"
