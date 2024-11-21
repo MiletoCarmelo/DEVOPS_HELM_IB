@@ -1,27 +1,27 @@
-# # templates/service.yaml
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: ib-gateway
-#   namespace: {{ .Values.namespace.name }}
-#   labels:
-#     app: ib-gateway
-# spec:
-#   type: {{ .Values.service.type }}
-#   ports:
-#     - port: {{ .Values.ibgateway.port }}
-#       targetPort: tws
-#       protocol: TCP
-#       name: tws
-#     - port: {{ .Values.ibgateway.apiPort }}
-#       targetPort: api
-#       protocol: TCP
-#       name: api
-#     {{- if .Values.vnc.enabled }}
-#     - port: {{ .Values.vnc.port }}
-#       targetPort: vnc
-#       protocol: TCP
-#       name: vnc
-#     {{- end }}
-#   selector:
-#     app: ib-gateway
+# templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ib-gateway
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: ib-gateway
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.ibgateway.port }}
+      targetPort: tws
+      protocol: TCP
+      name: tws
+    - port: {{ .Values.ibgateway.apiPort }}
+      targetPort: api
+      protocol: TCP
+      name: api
+    {{- if .Values.vnc.enabled }}
+    - port: {{ .Values.vnc.port }}
+      targetPort: vnc
+      protocol: TCP
+      name: vnc
+    {{- end }}
+  selector:
+    app: ib-gateway
