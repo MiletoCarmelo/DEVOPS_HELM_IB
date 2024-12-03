@@ -1,4 +1,3 @@
-# templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,7 +6,7 @@ metadata:
   labels:
     app: ib-gateway
 spec:
-  type: {{ .Values.service.type }}
+  type: LoadBalancer
   ports:
     - port: {{ .Values.ibgateway.port }}
       targetPort: tws
@@ -17,6 +16,10 @@ spec:
       targetPort: api
       protocol: TCP
       name: api
+    - port: 6080
+      targetPort: 6080
+      protocol: TCP
+      name: novnc
     {{- if .Values.vnc.enabled }}
     - port: {{ .Values.vnc.port }}
       targetPort: vnc

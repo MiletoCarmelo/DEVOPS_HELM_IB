@@ -14,7 +14,7 @@ image:
 
 # Configuration IB Gateway
 ibgateway:
-  mode: "paper"
+  mode: "paper"  # "paper" ou "live"
   port: "4001"
   apiPort: "4002"
   timezone: "Europe/Paris"
@@ -27,7 +27,8 @@ vnc:
 
 # Configuration du service
 service:
-  type: ClusterIP
+  type: LoadBalancer  # Changé pour permettre l'accès externe
+  annotations: {}     # Pour cloud providers spécifiques
 
 # Configuration des ressources
 resources:
@@ -43,12 +44,37 @@ persistence:
   enabled: true
   size: "1Gi"
   accessMode: ReadWriteOnce
-  storageClass: "local-path" # pour verifier : kubectl get storageclass
+  storageClass: "local-path"
 
 # Configuration de la sécurité
 security:
   autoRestartOnDisconnect: true
+  allowedIPs: []  # Nouvelle option pour la sécurité réseau
+  # Example:
+  # allowedIPs:
+  #   - "192.168.1.0/24"
+  #   - "10.0.0.0/8"
 
 # Configuration des logs
 logging:
   level: "INFO"
+  persistence:
+    enabled: true
+    size: "500Mi"
+    retention: "7d"
+
+# Configuration supervisor (nouveau)
+supervisor:
+  enabled: true
+  logLevel: "info"
+
+# Configuration des sondes (nouveau)
+probes:
+  readiness:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  liveness:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 20

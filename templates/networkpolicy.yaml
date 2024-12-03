@@ -1,0 +1,28 @@
+{{- if .Values.security.allowedIPs }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ib-gateway-access
+  namespace: {{ .Values.namespace.name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ib-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        {{- range .Values.security.allowedIPs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.ibgateway.port }}
+        - protocol: TCP
+          port: {{ .Values.ibgateway.apiPort }}
+        {{- if .Values.vnc.enabled }}
+        - protocol: TCP
+          port: {{ .Values.vnc.port }}
+        {{- end }}
+{{- end }}
