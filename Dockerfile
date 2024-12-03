@@ -1,10 +1,5 @@
-# Première étape : Builder pour toutes les architectures
+# Première étage : Builder commun
 FROM --platform=$BUILDPLATFORM ubuntu:22.04 as builder
-
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-
-RUN echo "Building on $BUILDPLATFORM, targeting $TARGETPLATFORM"
 
 # Installation des dépendances communes
 RUN apt-get update && apt-get install -y \
@@ -13,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de noVNC pour toutes les architectures
+# Installation de noVNC
 RUN git clone https://github.com/novnc/noVNC.git /opt/novnc && \
     git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify
 
@@ -22,10 +17,12 @@ WORKDIR /tmp
 RUN wget -q https://download2.interactivebrokers.com/installers/ibgateway/stable-standalone/ibgateway-stable-standalone-linux-x64.sh && \
     chmod +x ibgateway-stable-standalone-linux-x64.sh
 
-# Stage pour ARM64 (Raspberry Pi)
-FROM ubuntu:22.04 as arm64
+# Stage final
+FROM ubuntu:22.04
 
-# Installation des dépendances ARM
+ARG TARGETARCH
+
+# Installation des dépendances de base communes
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
@@ -40,46 +37,38 @@ RUN apt-get update && apt-get install -y \
     libxi6 \
     socat \
     python3-numpy \
-    gcc-multilib \
-    g++-multilib \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de Box64/86 pour ARM
-COPY scripts/install-box.sh /install-box.sh
-RUN chmod +x /install-box.sh && /install-box.sh
-
-# Stage pour AMD64 (x86_64)
-FROM ubuntu:22.04 as amd64
-
-# Installation des dépendances x86_64
-RUN apt-get update && apt-get install -y \
-    xvfb \
-    x11vnc \
-    supervisor \
-    default-jre \
-    libxtst6 \
-    libxrender1 \
-    libxi6 \
-    socat \
-    python3-numpy \
-    && rm -rf /var/lib/apt/lists/*
-
-# Stage final conditionnel
-FROM ${TARGETPLATFORM/linux\//} as final
+# Installation des dépendances spécifiques à ARM64
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+        apt-get update && \
+        apt-get install -y \
+            libatomic1 \
+            libxft2 \
+            && rm -rf /var/lib/apt/lists/* && \
+        cd /opt && \
+        git clone https://github.com/ptitSeb/box64 && \
+        cd box64 && mkdir build && cd build && \
+        cmake .. -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
+        make -j4 && make install && \
+        cd ../.. && rm -rf box64 && \
+        echo "/usr/local/lib64" > /etc/ld.so.conf.d/box64.conf && \
+        ldconfig; \
+    fi
 
 # Copie des fichiers depuis le builder
 COPY --from=builder /opt/novnc /opt/novnc
 COPY --from=builder /tmp/ibgateway-stable-standalone-linux-x64.sh /tmp/
 
 # Installation d'IB Gateway selon l'architecture
-RUN if [ "$(uname -m)" = "aarch64" ]; then \
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
         BOX64_LOG=1 box64 /tmp/ibgateway-stable-standalone-linux-x64.sh -q -dir /opt/ibgateway; \
     else \
         /tmp/ibgateway-stable-standalone-linux-x64.sh -q -dir /opt/ibgateway; \
     fi && \
     rm /tmp/ibgateway-stable-standalone-linux-x64.sh
 
-# Configuration commune
+# Configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY scripts/start-script.sh /start.sh
 RUN chmod +x /start.sh

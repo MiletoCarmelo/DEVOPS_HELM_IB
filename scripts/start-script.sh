@@ -15,23 +15,29 @@ until xdpyinfo -display :1 >/dev/null 2>&1; do
 done
 
 # Démarrage d'IB Gateway selon l'architecture
-if [ "$(uname -m)" = "aarch64" ]; then
-    export BOX64_LOG=1
-    export BOX64_LD_LIBRARY_PATH="/opt/ibgateway/jre/lib/amd64"
-    box64 /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
-else
-    /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
-fi
+case "$(uname -m)" in
+    aarch64)
+        export BOX64_LOG=1
+        export BOX64_LD_LIBRARY_PATH="/opt/ibgateway/jre/lib/amd64"
+        box64 /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
+        ;;
+    *)
+        /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
+        ;;
+esac
 
 # Boucle de surveillance
 while true; do
     if ! pgrep -f "ibgateway" > /dev/null; then
         echo "IB Gateway process died, restarting..."
-        if [ "$(uname -m)" = "aarch64" ]; then
-            box64 /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
-        else
-            /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
-        fi
+        case "$(uname -m)" in
+            aarch64)
+                box64 /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
+                ;;
+            *)
+                /opt/ibgateway/ibgateway $TWS_USERID $TWS_PASSWORD $IB_ACCOUNT
+                ;;
+        esac
     fi
     sleep 10
 done
