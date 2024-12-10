@@ -120,10 +120,12 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: arm64
+          platforms: 'linux/amd64,linux/arm64'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          platforms: 'linux/amd64,linux/arm64'
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -134,18 +136,29 @@ jobs:
 
       - name: Set lowercase IMAGE_NAME
         id: set_image_name
-        run: echo "IMAGE_NAME_LOWER=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: |
+          echo "IMAGE_NAME_LOWER=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Print IMAGE_NAME_LOWER
-        run: echo "${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME_LOWER }}:latest"
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
+          context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME_LOWER }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   release-chart:
     needs: build-and-push-image
@@ -158,7 +171,7 @@ jobs:
 
       - name: Update values.yaml with new image
         run: |
-          sed -i "s|repository:.*|repository: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}|" ./values.yaml
+          sed -i "s|repository:.*|repository: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}|" ./values.yaml
           sed -i "s|tag:.*|tag: latest|" ./values.yaml
 
       - name: Publish Helm chart
@@ -171,7 +184,9 @@ jobs:
           linting: false
 
       - name: Summary
-        run: echo "https://raw.githubusercontent.com/${{ github.repository }}/${{ env.BRANCH_PAGES }}"
+        run: |
+          echo "Chart URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ env.BRANCH_PAGES }}"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest"
 
 ==== ./templates/deployment.yaml ====
 
@@ -244,7 +259,6 @@ spec:
 
 ==== ./templates/service.yaml ====
 
-# templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -253,7 +267,7 @@ metadata:
   labels:
     app: ib-gateway
 spec:
-  type: {{ .Values.service.type }}
+  type: LoadBalancer
   ports:
     - port: {{ .Values.ibgateway.port }}
       targetPort: tws
@@ -263,6 +277,10 @@ spec:
       targetPort: api
       protocol: TCP
       name: api
+    - port: 6080
+      targetPort: 6080
+      protocol: TCP
+      name: novnc
     {{- if .Values.vnc.enabled }}
     - port: {{ .Values.vnc.port }}
       targetPort: vnc
@@ -271,7 +289,6 @@ spec:
     {{- end }}
   selector:
     app: ib-gateway
-
 
 ==== ./templates/pvc.yaml ====
 
@@ -315,6 +332,37 @@ data:
   VNC_SERVER_PASSWORD: "{{ .Values.vnc.password }}"
   {{- end }}
 
+==== ./templates/networkpolicy.yaml ====
+
+{{- if .Values.security.allowedIPs }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ib-gateway-access
+  namespace: {{ .Values.namespace.name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ib-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        {{- range .Values.security.allowedIPs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.ibgateway.port }}
+        - protocol: TCP
+          port: {{ .Values.ibgateway.apiPort }}
+        {{- if .Values.vnc.enabled }}
+        - protocol: TCP
+          port: {{ .Values.vnc.port }}
+        {{- end }}
+{{- end }}
+
 ==== ./values.yaml ====
 
 # Configuration du namespace
@@ -333,7 +381,7 @@ image:
 
 # Configuration IB Gateway
 ibgateway:
-  mode: "paper"
+  mode: "paper"  # "paper" ou "live"
   port: "4001"
   apiPort: "4002"
   timezone: "Europe/Paris"
@@ -346,7 +394,8 @@ vnc:
 
 # Configuration du service
 service:
-  type: ClusterIP
+  type: LoadBalancer  # Changé pour permettre l'accès externe
+  annotations: {}     # Pour cloud providers spécifiques
 
 # Configuration des ressources
 resources:
@@ -362,13 +411,38 @@ persistence:
   enabled: true
   size: "1Gi"
   accessMode: ReadWriteOnce
-  storageClass: "local-path" # pour verifier : kubectl get storageclass
+  storageClass: "local-path"
 
 # Configuration de la sécurité
 security:
   autoRestartOnDisconnect: true
+  allowedIPs: []  # Nouvelle option pour la sécurité réseau
+  # Example:
+  # allowedIPs:
+  #   - "192.168.1.0/24"
+  #   - "10.0.0.0/8"
 
 # Configuration des logs
 logging:
   level: "INFO"
+  persistence:
+    enabled: true
+    size: "500Mi"
+    retention: "7d"
+
+# Configuration supervisor (nouveau)
+supervisor:
+  enabled: true
+  logLevel: "info"
+
+# Configuration des sondes (nouveau)
+probes:
+  readiness:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  liveness:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 20
 
