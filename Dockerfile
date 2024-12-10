@@ -36,27 +36,35 @@ ENV IB_ACCOUNT=""
 #     - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "TWS_PASSWORD") (line 31)
 
 # Installation des dépendances de base communes
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Dépendances pour le développement
     git \
     build-essential \
     cmake \
+    # Python et bibliothèques
     python3 \
     python3-pip \
     python3-numpy \
+    # Dépendances pour X11 et affichage
     xvfb \
     x11vnc \
     x11-utils \
-    supervisor \
-    default-jre \
-    libxtst6 \
-    libxrender1 \
-    libxi6 \
-    socat \
     xfce4 \
     xfce4-terminal \
     dbus-x11 \
+    # Java Runtime Environment
+    default-jre \
+    # Bibliothèques graphiques
+    libxtst6 \
+    libxrender1 \
+    libxi6 \
+    # Outils divers
+    supervisor \
+    socat \
     net-tools \
+    gzip \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Installation d'ibapi
 RUN pip3 install --no-cache-dir ibapi
@@ -86,7 +94,7 @@ COPY --from=builder /tmp/ibgateway-stable-standalone-linux-x64.sh /tmp/
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     BOX64_LOG=1 box64 /tmp/ibgateway-stable-standalone-linux-x64.sh -q -dir /opt/ibgateway; \
     else \
-    /tmp/ibgateway-stable-standalone-linux-x64.sh -q -dir /opt/ibgateway; \
+    bash /tmp/ibgateway-stable-standalone-linux-x64.sh -q -dir /opt/ibgateway; \
     fi && \
     rm /tmp/ibgateway-stable-standalone-linux-x64.sh
 
