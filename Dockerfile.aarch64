@@ -1,0 +1,169 @@
+# Première étage : Builder commun
+FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS builder
+
+# Installation des dépendances communes
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installation de noVNC
+RUN git clone https://github.com/novnc/noVNC.git /opt/novnc && \
+    git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify
+
+# Stage final
+FROM ubuntu:22.04
+
+# Arguments de construction
+ARG TARGETARCH
+# Variables système et versions
+ENV DEBIAN_FRONTEND=noninteractive \
+    DISPLAY=:1 \
+    IB_GATEWAY_VERSION=10.27.1c \
+    IB_GATEWAY_RELEASE_CHANNEL=latest 
+
+# IBC env vars
+
+ENV HOME=/opt/
+ENV TWS_MAJOR_VRSN=${IB_GATEWAY_VERSION}
+ENV TWS_PATH=${HOME}/Jts
+ENV TWS_INI=jts.ini
+ENV IBC_PATH=${HOME}/ibc
+ENV IBC_INI=${HOME}/ibc/config.ini
+ENV GATEWAY_OR_TWS=gateway
+
+# Installation des dépendances de base communes
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Dépendances pour le développement
+    git \
+    build-essential \
+    cmake \
+    # Python et bibliothèques
+    python3 \
+    python3-pip \
+    python3-numpy \
+    # Dépendances pour X11 et affichage
+    xvfb \
+    x11vnc \
+    x11-utils \
+    xfce4 \
+    xfwm4 \
+    xfce4-panel \
+    xfce4-session \
+    xfdesktop4 \
+    xfce4-terminal \
+    dbus-x11 \
+    # Java Runtime Environment
+    default-jre \
+    # Bibliothèques graphiques
+    libxtst6 \
+    libxrender1 \
+    libxi6 \
+    # Outils divers
+    supervisor \
+    socat \
+    net-tools \
+    gzip \
+    curl \
+    wget \ 
+    unzip \  
+    && rm -rf /var/lib/apt/lists/*
+
+# Installation d'ibapi
+RUN pip3 install --no-cache-dir ibapi
+
+# Copie des fichiers depuis le builder
+COPY --from=builder /opt/novnc /opt/novnc
+
+# Installer box64
+RUN apt-get update && apt-get install -y cmake gcc g++ make && \
+    git clone https://github.com/ptitSeb/box64.git /tmp/box64 && \
+    cd /tmp/box64 && \
+    mkdir build && \
+    cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
+    make -j$(nproc) && \
+    make install && \
+    rm -rf /tmp/box64
+
+# Prepare system pour java
+RUN curl -sLO https://download.bell-sw.com/java/8u202/bellsoft-jdk8u202-linux-aarch64.tar.gz && \
+    tar -xzf bellsoft-jdk8u202-linux-aarch64.tar.gz && \
+    mv jdk8u202 /opt/java && \
+    rm bellsoft-jdk8u202-linux-aarch64.tar.gz
+
+# Garder celui-ci qui est plus complet et dans le bon contexte avec les autres variables Java
+ENV JAVA_HOME=/opt/java \
+    PATH=/opt/java/bin:$PATH \
+    INSTALL4J_JAVA_HOME=/opt/java \
+    JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+
+# Install IB Gateway
+RUN curl -sSOL https://github.com/gnzsnz/ib-gateway-docker/releases/download/ibgateway-${IB_GATEWAY_RELEASE_CHANNEL}%40${IB_GATEWAY_VERSION}/ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh && \
+    curl -sSOL https://github.com/gnzsnz/ib-gateway-docker/releases/download/ibgateway-${IB_GATEWAY_RELEASE_CHANNEL}%40${IB_GATEWAY_VERSION}/ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh.sha256 && \
+    sha256sum --check ./ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh.sha256 && \
+    chmod a+x ./ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh && \
+    app_java_home=/opt/java ./ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh -q -dir /opt/ibgateway
+
+    # Installation d'IBC
+ENV IBC_VERSION=3.15.1
+RUN mkdir -p /opt/ibc && \
+    cd /opt/ibc && \
+    wget -q https://github.com/IbcAlpha/IBC/releases/download/${IBC_VERSION}/IBCLinux-${IBC_VERSION}.zip && \
+    unzip IBCLinux-${IBC_VERSION}.zip && \
+    rm IBCLinux-${IBC_VERSION}.zip && \
+    chmod +x *.sh
+
+COPY ./config/config.ini.tmpl /opt/ibc/config.ini.tmpl
+
+# Configuration d'IBC
+RUN echo "LogToConsole=yes" >> /opt/ibc/config.ini && \
+    echo "FIX=no" >> /opt/ibc/config.ini && \
+    echo "SaveTwoFactorKey=yes" >> /opt/ibc/config.ini && \
+    echo "IbLoginId=" >> /opt/ibc/config.ini && \
+    echo "IbPassword=" >> /opt/ibc/config.ini && \
+    echo "TradingMode=paper" >> /opt/ibc/config.ini && \
+    echo "ReadOnlyLogin=no" >> /opt/ibc/config.ini
+
+# Script de lancement modifié
+RUN echo '#!/bin/bash' > /opt/ibgateway/ibgateway && \
+    echo 'cd /opt/ibc' >> /opt/ibgateway/ibgateway && \
+    echo 'export TWS_MAJOR_VRSN=1027' >> /opt/ibgateway/ibgateway && \
+    echo 'export TWS_PATH=/opt/ibgateway' >> /opt/ibgateway/ibgateway && \
+    echo 'export JAVA_PATH=/opt/java' >> /opt/ibgateway/ibgateway && \
+    echo 'export DISPLAY=":1"' >> /opt/ibgateway/ibgateway && \
+    echo 'export PATH="/opt/java/bin:$PATH"' >> /opt/ibgateway/ibgateway && \
+    echo './scripts/ibcstart.sh 1027 -g --tws-path=/opt/ibgateway --ibc-path=/opt/ibc --ibc-ini=/opt/ibc/config.ini' >> /opt/ibgateway/ibgateway && \
+    chmod +x /opt/ibgateway/ibgateway && \
+    chmod +x /opt/ibc/scripts/ibcstart.sh
+
+# Configuration d'IB Gateway pour accepter les connexions externes
+RUN mkdir -p /root/IBController/Logs && \
+    echo "OverrideProp.IbAutoClosedown=no" > /root/IBController/IBController.ini && \
+    echo "AllowedConnections=*" >> /root/IBController/IBController.ini && \
+    echo "ListenAddress=0.0.0.0" >> /root/IBController/IBController.ini && \
+    echo "[Log]"  >> /root/IBController/IBController.ini && \
+    echo "Create = true"  >> /root/IBController/IBController.ini && \
+    echo "Path = /root/IBController/Logs"  >> /root/IBController/IBController.ini && \
+    echo "Level = 10"  >> /root/IBController/IBController.ini
+
+# Et ajoutons un paramètre pour Java
+ENV JAVA_OPTIONS="-Djava.net.preferIPv4Stack=true ${JAVA_OPTS}"
+
+# Création du répertoire pour les logs
+RUN mkdir -p /var/log && \
+    mkdir -p /root/.vnc
+
+# Configuration
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY scripts/start-script.sh /start.sh
+COPY tests/test_co.py /test_co.py
+
+RUN chmod +x /start.sh
+
+# Expose les ports nécessaires
+EXPOSE 4001 4002 5900 6080
+
+# Commande de démarrage
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
